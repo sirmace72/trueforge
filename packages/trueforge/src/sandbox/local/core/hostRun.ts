@@ -42,6 +42,16 @@ function codeModeSocketParentAllow(): string[] {
   return codeModeSocketParentPath === undefined ? [] : [codeModeSocketParentPath];
 }
 
+function linuxNetworkSocketAllow(platform: LocalSandboxPlatform): string[] {
+  if (platform !== 'linux') {
+    return [];
+  }
+
+  return [SandboxManager.getLinuxHttpSocketPath(), SandboxManager.getLinuxSocksSocketPath()].filter(
+    (socketPath): socketPath is string => socketPath !== undefined,
+  );
+}
+
 function requireActivePlatform(): LocalSandboxPlatform {
   if (activePlatform === undefined) {
     throw new Error('SRT platform is not set; call initSrt({ platform }) first');
@@ -279,7 +289,12 @@ function filesystemPolicy(params: { sandboxRootPath: string; platform: LocalSand
     allowWrite: [params.sandboxRootPath],
     denyWrite: denySharedDefaultWritePaths(),
     denyRead: ['/'],
-    allowRead: [params.sandboxRootPath, ...codeModeSocketParentAllow(), ...platformAllowRead(params.platform)],
+    allowRead: [
+      params.sandboxRootPath,
+      ...codeModeSocketParentAllow(),
+      ...linuxNetworkSocketAllow(params.platform),
+      ...platformAllowRead(params.platform),
+    ],
   };
 }
 
